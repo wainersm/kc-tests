@@ -1,0 +1,82 @@
+---
+# tasks file for fedora
+- name: Minimal required packages
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - hunspell
+    - hunspell-en-GB
+    - hunspell-en-US
+    - pandoc
+
+- name: Required packages for default setup
+  package:
+    name: "{{ item }}"
+  when: setup_type == 'default'
+  with_items:
+    - xfsprogs
+    - dnf-plugins-core
+    - python
+    - pkgconfig
+    - util-linux
+    - libgpg-error-devel
+    # kata_containers_dependencies
+    - libtool
+    - automake
+    - autoconf
+    - bc
+    - pixman
+    - numactl-libs
+    - libcap-devel
+    - libattr-devel
+    - libcap-ng-devel
+    - zlib-devel
+    - pixman-devel
+    - librbd-devel
+    - libpmem-devel
+    # kernel_dependencies
+    - elfutils-libelf-devel
+    - flex
+    # crio_dependencies
+    - btrfs-progs-devel
+    - device-mapper-devel
+    - glib2-devel
+    - glibc-devel
+    - glibc-static
+    - gpgme-devel
+    - libassuan-devel
+    - libseccomp-devel
+    - libselinux-devel
+    # bison_binary
+    - bison
+    # os_tree
+    - ostree-devel
+    # metrics_dependencies
+    - jq
+    # cri-containerd_dependencies
+    - libseccomp-devel
+    - btrfs-progs-devel
+    - libseccomp-static
+    # crudini
+    - crudini
+    # procenv
+    - procenv
+    # procenv
+    - procenv
+    # haveged
+    - haveged
+    # gnu_parallel
+    - parallel
+    # libsystemd
+    - systemd-devel
+    # redis
+    - redis
+    # versionlock
+    - python3-dnf-plugin-versionlock
+    - '@development-tools'
+
+- name: Podman is installed
+  package:
+    name: podman
+  when: lookup('env','TEST_CGROUPSV2') == 'true'
