@@ -56,6 +56,9 @@ export FEATURE_SELINUX="no"
 # kata's Jenkins is uncompressed in that directory.
 export PREFIX="/opt/kata"
 
+# TODO: should remove this when ready to merge
+export runtime_repo="github.com/kata-containers/runtime"
+
 RUN_KATA_CHECK="false" "${cidir}/install_kata.sh"
 
 # The resulting kata installation will be merged in rhcos filesystem, and
