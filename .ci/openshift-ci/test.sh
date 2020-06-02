@@ -25,3 +25,5 @@ info "Run test suite: $suite"
 test_status='PASS'
 ${script_dir}/run_${suite}_test.sh || test_status='FAIL'
 info "Test suite: $suite: $test_status"
+
+sleep 3600
