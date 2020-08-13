@@ -1,0 +1,11 @@
+# Create the route to the app's service '/'.
+---
+apiVersion: v1
+kind: Route
+metadata:
+  name: http-server-route
+spec:
+  path: "/" 
+  to:
+    kind: Service
+    name: http-server-service

@@ -1,0 +1,13 @@
+# Create the service on port 80 for the http-server app.
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: http-server-service
+spec:
+  selector:
+    app: http-server-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
