@@ -118,6 +118,19 @@ build_image() {
 	export ROOTFS_DIR
 	sudo rm -rf "${ROOTFS_DIR}"
 
+if [ "${BUILD_WITH_DRACUT}" == "yes" ]; then
+	echo "*** BUILDING WITH DRACUT: BEGIN"
+	if [ "${TEST_INITRD}" == "yes" ]; then
+		local local image_name="kata-containers-initrd.img"
+		local make_target="initrd"
+	else
+		local make_target="image"
+		local image_name="kata-containers.img"
+	fi
+	# co s ROOTFS_DIR??  Jak to uplatnit??
+	sudo -E AGENT_VERSION="${agent_commit}" PATH="$PATH" GOPATH="$GOPATH" OS_VERSION=${os_version} make BUILD_METHOD=dracut AGENT_INIT="${AGENT_INIT}" "$make_target"
+	echo "*** BUILDING WITH DRACUT: END"
+else
 	if [ "${TEST_CGROUPSV2}" == "false" ]; then
 		echo "Set runtime as default runtime to build the image"
 		bash "${cidir}/../cmd/container-manager/manage_ctr_mgr.sh" docker configure -r runc -f
@@ -145,6 +158,7 @@ build_image() {
 		fi
 		local image_name="kata-containers-initrd.img"
 	fi
+fi
 
 	sudo install -o root -g root -m 0640 -D ${image_name} "${IMAGE_DIR}/${image_output}"
 	sudo install -o root -g root -m 0640 -D "${ROOTFS_DIR}/var/lib/osbuilder/osbuilder.yaml" "${IMAGE_DIR}/${OSBUILDER_YAML_INSTALL_NAME}"
@@ -195,15 +209,15 @@ main() {
 
 	info "Latest cached image: ${last_build_image_version}"
 
-	if [ "$image_output" == "$last_build_image_version" ]; then
-		info "Cached image is same to be generated"
-		if ! install_ci_cache_image "${type}"; then
-			info "failed to install cached image, trying to build from source"
-			build_image "${image_output}" "${osbuilder_distro}" "${os_version}" "${agent_commit}"
-		fi
-	else
+#	if [ "$image_output" == "$last_build_image_version" ]; then
+#		info "Cached image is same to be generated"
+#		if ! install_ci_cache_image "${type}"; then
+#			info "failed to install cached image, trying to build from source"
+#			build_image "${image_output}" "${osbuilder_distro}" "${os_version}" "${agent_commit}"
+#		fi
+#	else
 		build_image "${image_output}" "${osbuilder_distro}" "${os_version}" "${agent_commit}"
-	fi
+##	fi
 
 	if [ ! -L "${LINK_PATH}" ]; then
 		die "Link path not installed: ${LINK_PATH}"

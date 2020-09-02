@@ -39,6 +39,9 @@ export experimental_kernel="false"
 # Configure to use the initrd rootfs.
 export TEST_INITRD="yes"
 
+export BUILD_WITH_DRACUT="yes"
+#export BUILD_WITH_DRACUT="no"
+
 # Configure to use vsock.
 # TODO: install_runtime.sh will try to load the vsock module and the script
 # fail. See https://github.com/kata-containers/tests/issues/2614
