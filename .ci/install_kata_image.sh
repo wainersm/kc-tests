@@ -95,6 +95,48 @@ check_not_empty() {
 	fi
 }
 
+build_image_with_dracut() {
+	image_output=${1}
+	os_version=${2}
+	agent_commit=${3}
+
+	check_not_empty "$image_output" "Missing image"
+	check_not_empty "$os_version" "Missing os version"
+	check_not_empty "$agent_commit" "Missing agent commit"
+
+	pushd "${osbuilder_path}" >/dev/null
+
+	if [ "${TEST_INITRD}" == "yes" ]; then
+		local local image_name="kata-containers-initrd.img"
+		local make_target="initrd"
+	else
+		local make_target="image"
+		local image_name="kata-containers.img"
+	fi
+
+	sudo -E AGENT_VERSION="${agent_commit}" PATH="$PATH" GOPATH="$GOPATH" OS_VERSION=${os_version} make BUILD_METHOD=dracut AGENT_INIT="${AGENT_INIT}" "$make_target"
+
+	sudo install -o root -g root -m 0640 -D ${image_name} "${IMAGE_DIR}/${image_output}"
+
+	# Unlike the distro method, the dracut-based method doesn't leave
+	# behind an unpacked root filesystem tree, so to get access to
+	# osbuilder.yaml in order to install it, we need to extract it to
+	# a temporary directory from the initrd.
+	tmpdir=$(mktemp -d)
+	local image_abs_name=${PWD}/${image_name}
+	pushd ${tmpdir} >/dev/null
+	cat ${image_abs_name} | cpio -idmv var/lib/osbuilder/osbuilder.yaml
+	popd >/dev/null
+
+	sudo install -o root -g root -m 0640 -D "${tmpdir}/var/lib/osbuilder/osbuilder.yaml" "${IMAGE_DIR}/${OSBUILDER_YAML_INSTALL_NAME}"
+
+	rm -rf ${tmpdir}
+
+	(cd ${IMAGE_DIR} && sudo ln -sf "${IMAGE_DIR}/${image_output}" "${LINK_PATH}")
+
+	popd >/dev/null
+}
+
 build_image() {
 	image_output=${1}
 	distro=${2}
@@ -148,7 +190,7 @@ build_image() {
 
 	sudo install -o root -g root -m 0640 -D ${image_name} "${IMAGE_DIR}/${image_output}"
 	sudo install -o root -g root -m 0640 -D "${ROOTFS_DIR}/var/lib/osbuilder/osbuilder.yaml" "${IMAGE_DIR}/${OSBUILDER_YAML_INSTALL_NAME}"
-	(cd /usr/share/kata-containers && sudo ln -sf "${IMAGE_DIR}/${image_output}" "${LINK_PATH}")
+	(cd ${IMAGE_DIR} && sudo ln -sf "${IMAGE_DIR}/${image_output}" "${LINK_PATH}")
 
 	popd >/dev/null
 }
@@ -202,7 +244,11 @@ main() {
 			build_image "${image_output}" "${osbuilder_distro}" "${os_version}" "${agent_commit}"
 		fi
 	else
-		build_image "${image_output}" "${osbuilder_distro}" "${os_version}" "${agent_commit}"
+		if [ "${BUILD_WITH_DRACUT}" == "yes" ]; then
+			build_image_with_dracut "${image_output}" "${os_version}" "${agent_commit}"
+		else
+			build_image "${image_output}" "${osbuilder_distro}" "${os_version}" "${agent_commit}"
+		fi
 	fi
 
 	if [ ! -L "${LINK_PATH}" ]; then
