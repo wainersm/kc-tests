@@ -239,7 +239,7 @@ main() {
 
 	info "Latest cached image: ${last_build_image_version}"
 
-	if [ "$image_output" == "$last_build_image_version" && "${IGNORE_CACHED_ARTIFACTS}" == "no" ]; then
+	if [ "$image_output" == "$last_build_image_version" ] && [ "${IGNORE_CACHED_ARTIFACTS}" == "no" ]; then
 		info "Cached image is same to be generated"
 		if ! install_ci_cache_image "${type}"; then
 			info "failed to install cached image, trying to build from source"
