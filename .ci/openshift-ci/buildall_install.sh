@@ -42,6 +42,8 @@ export experimental_kernel="false"
 
 # Configure to use the initrd rootfs.
 export TEST_INITRD="yes"
+export BUILD_WITH_DRACUT="yes"
+export IGNORE_CACHED_ARTIFACTS="yes"
 
 # Configure to use vsock.
 # TODO: install_runtime.sh will try to load the vsock module and the script
