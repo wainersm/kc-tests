@@ -115,7 +115,8 @@ if [ -z "$KATA_CRIO_CONF_BASE64" ]; then
 		$(cat $configs_dir/crio_kata.conf|base64) | sed -e 's/\s//g')
 fi
 envsubst < ${deployments_dir}/machineconfig_kata_runtime.yaml.in | oc apply -f -
-oc get machineconfig/50-kata || die "Kata machineconfig not found"
+oc get -f ${deployments_dir}/machineconfig_kata_runtime.yaml.in || \
+	die "Kata machineconfig not found"
 
 # The machineconfig which installs the kata drop-in in CRI-O will trigger a
 # worker reboot.

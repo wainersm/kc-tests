@@ -4,7 +4,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
-# Build Kata Containers and install into a given destination directory.
+# This script is evoked within an OpenShift Build to product the binary image,
+# which will contain the Kata Containers installation into a give destination
+# directory.
 #
 
 set -e
@@ -19,6 +21,8 @@ source "${cidir}/lib.sh"
 export DESTDIR="$1"
 info "Build and install Kata Containers at ${DESTDIR}"
 
+# This script is evoked within a variant of CentOS container image in the
+# OpenShift Build process. So it was implemented for running in CentOS.
 [ "$ID" != "centos" ] && die "Expect the build root to be CentOS"
 # The scripts rely on sudo which is not installed in the build environment.
 yum install -y sudo
