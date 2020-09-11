@@ -211,8 +211,15 @@ get_dependencies() {
 
 main() {
 	get_dependencies
-	local os_version=$(get_version "${IMAGE_OS_VERSION_KEY}")
-	local osbuilder_distro=$(get_version "${IMAGE_OS_KEY}")
+	if [ "${BUILD_WITH_DRACUT}" == "yes" ]; then
+		local os_version="${VERSION_ID}"
+		local osbuilder_distro="${ID}"
+		echo "*** PVL os_version=${os_version} osbuilder_distro=${osbuilder_distro}"
+		local build_method_suffix=".dracut"
+	else
+		local os_version=$(get_version "${IMAGE_OS_VERSION_KEY}")
+		local osbuilder_distro=$(get_version "${IMAGE_OS_KEY}")
+	fi
 
 	if [ "${osbuilder_distro}" == "clearlinux" ] && [ "${os_version}" == "latest" ]; then
 		os_version=$(curl -fLs https://download.clearlinux.org/latest)
@@ -224,14 +231,15 @@ main() {
 	image_output="kata-containers-${osbuilder_distro}-${os_version}-osbuilder-${osbuilder_commit}-agent-${agent_commit}"
 
 	if [ "${TEST_INITRD}" == "no" ]; then
-		image_output="${image_output}.img"
+		image_output="${image_output}.img${build_method_suffix}"
 		type="image"
 	else
-		image_output="${image_output}.initrd"
+		image_output="${image_output}.initrd${build_method_suffix}"
 		type="initrd"
 	fi
+	echo "*** PVL image_output=${image_output}"
 
-	latest_file="latest-${type}"
+	latest_file="latest-${type}${build_method_suffix}"
 	info "Image to generate: ${image_output}"
 
 	last_build_image_version=$(curl -fsL "${latest_build_url}/${latest_file}") ||
