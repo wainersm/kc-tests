@@ -66,7 +66,11 @@ cache_cloud_hypervisor() {
 # This builds the image by specifying the image version from
 # /usr/share/kata-containers and the image name
 cache_image_artifacts() {
+	local built_with_dracut="${1}"
 	local image_name="image"
+	if [ "${built_with_dracut}" == "true" ]; then
+		image_name="${image_name}.dracut"
+	fi
 	local image_path="${kata_dir}/kata-containers.img"
 	local path=$(readlink -f "${image_path}")
 	local image_version=$(echo $(basename "${path}"))
@@ -77,10 +81,16 @@ cache_image_artifacts() {
 # This builds the initrd image by specifying the image initrd version
 # from /usr/share/kata-containers and the image initrd name
 cache_image_initrd_artifacts() {
+	local built_with_dracut="${1}"
+	echo "*** PVL built_with_dracut: ${built_with_dracut}"
 	local image_name="initrd"
+	if [ "${built_with_dracut}" == "true" ]; then
+		image_name="${image_name}.dracut"
+	fi
 	local image_path="${kata_dir}/kata-containers-initrd.img"
 	local path=$(readlink -f "${image_path}")
 	local image_version=$(echo $(basename "${path}"))
+	echo "*** PVL image_name: ${image_name} image_version: ${image_version}"
 	create_cache_asset "${image_name}" "${image_version}"
 	create_image_tar "${image_name}"
 }
@@ -89,6 +99,7 @@ cache_image_initrd_artifacts() {
 create_image_tar(){
 	local image_name="$1"
 	local getinfo=$(cat latest-"${image_name}")
+	echo "*** PVL getinfo: ${getinfo}"
 	tar -cJf "${getinfo}.tar.xz" "${getinfo}"
 	sha256sum "${getinfo}.tar.xz" > "${image_name}-tarball.sha256sum"
 	sha256sum -c "${image_name}-tarball.sha256sum"
@@ -98,8 +109,11 @@ create_image_tar(){
 # This function receives as arguments the component name (qemu, kernel, etc)
 # as well as the version
 create_cache_asset() {
+	echo "*** PVL create_cache_asset: start"
+
 	local component_name="$1"
 	local component_version="$2"
+	echo "*** PVL component_name=${component_name} component_version=${component_version}"
 	local check_image=$(echo "${component_version}" | grep kata || true)
 	local check_cloud_hypervisor=$(echo "${component_version}" | grep cloud || true)
 	local check_qemu=$(echo "${component_name}" | grep qemu || true)
@@ -110,14 +124,18 @@ create_cache_asset() {
 	if [ ! -z "${check_image}" ]; then
 		if [ ! -z "${check_initrd}" ]; then
 			image_path="${kata_dir}/kata-containers-initrd.img"
-			image_name="initrd"
 		else
 			image_path="${kata_dir}/kata-containers.img"
-			image_name="image"
 		fi
+		image_name="${component_name}"
 		path=$(readlink -f "${image_path}")
 		echo $(basename "${path}") > "latest-${image_name}"
-		sudo cp "${path}" "${kata_dir}/osbuilder-${image_name}.yaml"  .
+		# ${image_name} might be decorated with build method if the image was
+		# built by dracut.  In that case, it will have a format "<image_type>.dracut".
+		# We need to get rid of the possible ".dracut" suffix to get the correct
+		# .yaml file name.
+		local image_type="$(echo ${image_name} | tr "." "\n" | head -1)"
+		sudo cp "${path}" "${kata_dir}/osbuilder-${image_type}.yaml"  .
 	else
 		echo "${component_version}" >  "latest"
 	fi
@@ -144,6 +162,8 @@ create_cache_asset() {
 		sha256sum "${component_name}" > "sha256sum-${component_name}"
 		cat "sha256sum-${component_name}"
 	fi
+
+	echo "*** PVL create_cache_asset: end"
 }
 
 usage() {
@@ -165,7 +185,7 @@ EOT
 
 main() {
 	local OPTIND
-	while getopts "achiknqr" opt; do
+	while getopts "achiknqrd" opt; do
 		case "$opt" in
 		a)
 			build_qemu_experimental="true"
@@ -188,6 +208,9 @@ main() {
 			;;
 		r)
 			build_image_initrd="true"
+			;;
+		d)
+			built_with_dracut="true"
 			;;
 		esac
         done
@@ -213,9 +236,9 @@ main() {
 
 	[ "$build_qemu_experimental" == "true" ] && cache_qemu_experimental_artifacts
 
-	[ "$build_image" == "true" ] && cache_image_artifacts
+	[ "$build_image" == "true" ] && cache_image_artifacts "${built_with_dracut}"
 
-	[ "$build_image_initrd" == "true" ] && cache_image_initrd_artifacts
+	[ "$build_image_initrd" == "true" ] && cache_image_initrd_artifacts "${built_with_dracut}"
 
 	ls -la "${WORKSPACE}/artifacts/"
 	popd
