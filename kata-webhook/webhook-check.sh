@@ -61,6 +61,11 @@ check_working() {
 		-o jsonpath='{.spec.runtimeClassName}' pod/${hello_pod})
 	if [ "${class_name}" != "${RUNTIME_CLASS}" ]; then
 		warn "RuntimeClassName expected ${RUNTIME_CLASS}, got ${class_name}"
+		kubectl describe service/${WEBHOOK_SVC}
+		echo "--> service logs"
+		kubectl logs service/${WEBHOOK_SVC}
+		echo "--> mutatingwebhookconfiguration"
+		kubectl describe mutatingwebhookconfiguration/${WEBHOOK_SVC}"
 		die "kata-webhook is not working"
 	fi
 }
